@@ -1,0 +1,39 @@
+I want to build the first phase
+🔹 Phase 1: MVP (Single Institute Use)
+Goal: Build a working prototype focused on 1-2 use cases.
+
+Core Features:
+
+Note Generation Agent
+
+Input: UPSC-relevant PDFs (books, notes)
+
+Output: Condensed bullet-style notes (topic-wise)
+
+Current Affairs Summary Agent
+
+Input: Daily newspapers / PDFs
+
+Output: Daily/weekly current affairs capsules + issue-wise compilations
+
+MCQ Generator
+
+Input: Static PDF or context-based topic
+
+Output: 5–10 MCQs with answer + explanation
+
+Answer Writing Evaluator (Model Answer Generator)
+
+Input: Question prompt + syllabus context
+
+Output: 250-word structured answer + keywords
+
+Admin Interface (Basic Dashboard)
+
+Upload PDFs
+
+Choose task (notes / mcq / answer)
+
+Download/export content
+
+can you help me in depth for building tech
