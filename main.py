@@ -29,7 +29,7 @@ app.include_router(mcq_response.router)
 
 
 # Set Gemini API Key
-os.environ["GOOGLE_API_KEY"] = "AIzaSyDNVP2zL4Fvv5dA0bjo4kN-rszIM5VDNlk" # Use dotenv in prod
+os.environ["GOOGLE_API_KEY"] = os.environ.get("GOOGLE_API_KEY")
 llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
 
 headers_to_split_on = [
