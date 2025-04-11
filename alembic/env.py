@@ -57,7 +57,7 @@ def run_migrations_offline() -> None:
 
 
 def get_url():
-    return os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@localhost/rag_db")
+    return os.environ.get("DATABASE_URL")
 
 
 def run_migrations_online() -> None:
