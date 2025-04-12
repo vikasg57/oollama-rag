@@ -22,3 +22,5 @@ ipython==8.12.3
 ollama==0.4.7
 psycopg2==2.9.10
 python-multipart==0.0.20
+faiss-cpu==1.10.0
+supabase==2.15.0

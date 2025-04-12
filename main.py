@@ -1,6 +1,8 @@
 from fastapi import FastAPI, UploadFile, Form, Depends, Path
 from fastapi.responses import JSONResponse
 import os
+
+from utils.supabase_storage import SupabaseStorage
 from langchain.text_splitter import MarkdownHeaderTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -10,7 +12,6 @@ import pymupdf4llm
 import shutil
 from fastapi import Request, Form
 from langchain_ollama import OllamaLLM, OllamaEmbeddings
-from langchain_community.vectorstores import FAISS
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -64,6 +65,7 @@ def load_faiss_index(faiss_path):
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://civisync.netlify.app"
     # Add any other origins you need, e.g. your deployed frontend domain
 ]
 
@@ -85,29 +87,38 @@ async def upload_pdf(file: UploadFile,
                      institution_id: str = Path(...)
                      ):
     try:
-        file_path = f"temp_files/{file.filename}"
-        os.makedirs("temp_files", exist_ok=True)
-        with open(file_path, "wb") as buffer:
+        # Save the uploaded file temporarily
+        temp_dir = "temp_files"
+        os.makedirs(temp_dir, exist_ok=True)
+        temp_path = os.path.join(temp_dir, file.filename)
+        with open(temp_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        md_text = extract_pdf_in_markdown(file_path)
+        # Extract and index content
+        md_text = extract_pdf_in_markdown(temp_path)
         documents = smart_chunk_markdown(md_text)
-
         index_path = f"faiss_index/{index_name}"
         os.makedirs("faiss_index", exist_ok=True)
         create_faiss_index(documents, index_path)
 
-        # Save PDF index metadata to DB
+        # Upload to Supabase
+        supabase = SupabaseStorage()
+        supabase_path = f"{institution_id}/{file.filename}"
+        public_path = supabase.upload_file(temp_path, supabase_path)
+
+        # Save metadata to DB
         pdf_index_data = PDFIndexCreate(
-            index_name = index_name,
-            filename = file_path,
+            index_name=index_name,
+            filename=public_path,
             institution_id=institution_id
         )
-        create_pdf_index(
-            db=db,
-            pdf_data=pdf_index_data)
+        create_pdf_index(db=db, pdf_data=pdf_index_data)
 
-        return JSONResponse(content={"message": "Index created successfully."})
+        # Cleanup local file
+        os.remove(temp_path)
+
+        return JSONResponse(content={"message": "Index created successfully.", "file": public_path})
+
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
@@ -262,7 +273,7 @@ async def query_index(
         mcq_data = MCQResponseCreate(
             institution_id = institution_id,
             pdf_index_id = pdf_index.id,
-            mcq_data = response
+            mcq_data = response.content
         )
 
         create_mcq_response(
@@ -461,11 +472,6 @@ async def list_resources(
         db=db,
         institution_id=institution_id
     )
-    # List raw PDFs
-    pdfs = []
-    if os.path.isdir(PDF_DIR):
-        pdfs = [f for f in os.listdir(PDF_DIR) if f.lower().endswith(".pdf")]
-
     # List FAISS indices (directories under faiss_index)
     indices = []
     if os.path.isdir(INDEX_DIR):
@@ -474,19 +480,6 @@ async def list_resources(
     return JSONResponse(content={
         # "pdfs": [pdf.filename for pdf in pdf_indices],
         # "indices": [pdf.index_name for pdf in pdf_indices]
-        "pdfs": pdfs,
+        "pdfs": indices,
         "indices": indices
     })
-
-
-# prompt = f"""
-# You are a UPSC assistant. Based only on the context below, answer the question clearly and concisely.
-#
-# Context:
-# {context}
-#
-# Question:
-# {query}
-#
-# Answer:
-# """

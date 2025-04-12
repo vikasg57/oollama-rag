@@ -30,6 +30,7 @@ class InstitutionBase(BaseModel):
 
 class InstitutionCreate(InstitutionBase):
     api_request_limit: int = 100
+    id: UUID
 
 
 class InstitutionResponse(InstitutionBase):
