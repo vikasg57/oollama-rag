@@ -19,3 +19,12 @@ class SupabaseStorage:
         if response.path:
             return f"{self.bucket}/{response.path}"
         raise Exception("Failed to upload file to Supabase Storage")
+
+    def download_file(self, storage_path: str, local_path: str):
+        try:
+            file_bytes = self.client.storage.from_(self.bucket).download(storage_path)
+            os.makedirs(os.path.dirname(local_path), exist_ok = True)
+            with open(local_path, "wb") as f:
+                f.write(file_bytes)
+        except Exception as e:
+            raise RuntimeError(f"Failed to download {storage_path}: {str(e)}")
