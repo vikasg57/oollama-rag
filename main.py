@@ -119,7 +119,7 @@ async def upload_pdf(file: UploadFile,
             filename=public_path,
             institution_id=institution_id
         )
-        # create_pdf_index(db=db, pdf_data=pdf_index_data)
+        create_pdf_index(db=db, pdf_data=pdf_index_data)
 
         # Cleanup local file
         try:
@@ -141,6 +141,7 @@ async def upload_pdf(file: UploadFile,
 async def query_index(
         query: str, index_name: str,
         db: Session = Depends(get_db),
+        content_type: str = "MCQ",
         institution_id: str = Path(...)
 ):
     try:
@@ -160,7 +161,7 @@ async def query_index(
         relevant_docs = f_db.similarity_search(query, k=5)
         context = "\n\n".join([doc.page_content for doc in relevant_docs])
 
-        mcq_prompt = create_prompt(query, context)
+        mcq_prompt = create_prompt(query, context, content_type)
 
         # Create prompt
         response = llm.invoke(mcq_prompt)
@@ -202,6 +203,7 @@ async def query_index(
 async def query_with_ollama(
         query: str,
         index_name: str,
+        content_type: str = "MCQ",
         db: Session = Depends(get_db),
         institution_id: str = Path(...)
 ):
@@ -228,7 +230,7 @@ async def query_with_ollama(
         docs = vectorstore.similarity_search(query, k=5)
         context = "\n\n".join([doc.page_content for doc in docs])
         # Create prompt
-        mcq_prompt = create_prompt(query, context)
+        mcq_prompt = create_prompt(query, context, content_type)
 
         # Call Ollama LLM
         response = ollma.invoke(mcq_prompt)
@@ -287,10 +289,10 @@ async def list_resources(
         indices = [d for d in os.listdir(INDEX_DIR) if os.path.isdir(os.path.join(INDEX_DIR, d))]
 
     return JSONResponse(content={
-        # "pdfs": [pdf.filename for pdf in pdf_indices],
-        # "indices": [pdf.index_name for pdf in pdf_indices]
-        "pdfs": indices,
-        "indices": indices
+        "pdfs": [pdf.filename for pdf in pdf_indices],
+        "indices": [pdf.index_name for pdf in pdf_indices]
+        # "pdfs": indices,
+        # "indices": indices
     })
 
 
